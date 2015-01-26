@@ -1,5 +1,4 @@
 from pyaudio import PyAudio
-from threading import Thread
 import math
 import time
 
@@ -23,13 +22,23 @@ def play_tone(frequency, delay):
     for x in xrange(RESTFRAMES):
         WAVEDATA = WAVEDATA+chr(128)
 
+    return WAVEDATA
+
+def actually_play(wavedatas):
+    wavedatas = [data for data in wavedatas if data]
+    n_datas = len(wavedatas)
+    actual_data = ''
+    for data in zip(*wavedatas):
+        actual_data += chr(int(sum([ord(x) for x in data]) / n_datas))
     stream = p.open(format = p.get_format_from_width(1),
                     channels = 1,
                     rate = BITRATE,
                     output = True)
-    stream.write(WAVEDATA)
+
+    stream.write(actual_data)
     stream.stop_stream()
     stream.close()
+    return [data[len(actual_data):] for data in wavedatas if len(data) > len(actual_data)]
 
 class NetworkNode(object):
     def __init__(self, frequency, delay = 0, connection_map = None):
@@ -41,8 +50,7 @@ class NetworkNode(object):
 
     def step(self):
         if self.current_potential > THRESHOLD:
-            t = Thread(target = play_tone, args = (self.frequency, self.delay))
-            t.start()
+            self.current_data = play_tone(self.frequency, self.delay)
         self.next_potential = 0
 
     def transmit(self):
@@ -66,5 +74,11 @@ if __name__ == '__main__':
     n1.step()
     n2.step()
     n3.step()
-    time.sleep(10)
+    print len(n1.current_data)
+    print len(n2.current_data)
+    print len(n3.current_data)
+    wavedatas = actually_play([n1.current_data, n2.current_data, n3.current_data])
+    print len(wavedatas)
+    wavedatas = actually_play(wavedatas)
+    print len(wavedatas)
     p.terminate()

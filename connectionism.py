@@ -1,6 +1,6 @@
 import threading
 
-from nn_node import NetworkNode
+from nn_node import NetworkNode, actually_play
 
 MAX_TIME_STEPS=1
 
@@ -28,8 +28,10 @@ def initial_values(all_nodes):
 if __name__ == '__main__':
     all_nodes = init_nodes()
     all_nodes = initial_values(all_nodes)
+    wavedatas = []
     while True:
         [node.step() for node in all_nodes.values()]
+        wavedatas = actually_play([node.current_data for node in all_nodes.values()] + wavedatas)
         [node.transmit() for node in all_nodes.values()]
         [node.next() for node in all_nodes.values()]
 
